@@ -66,18 +66,21 @@ void showTemperature(){
   float temperature = sensors.getTempCByIndex(0);  
   int temp = min(max(round(temperature),0),59);
   for(int led = 0; led <= temp; led++) {
-    
+    CRGB color;
     if(led<10)
-      leds[o(led)]=(CRGB::Blue *(led==temp?1:0.5));
+      color = CRGB::Blue;
     else if(led<20)
-      leds[o(led)]=(CRGB::Purple *(led==temp?1:0.5));
+      color = CRGB::Purple;
     else if(led<25)
-      leds[o(led)]=(CRGB::Green *(led==temp?1:0.5));
-    else{
-      leds[o(led)]=(CRGB::Red *(led==temp?1:0.5));
-    }
+      color = CRGB::Green;
+    else
+      color = CRGB::Red;
+
+    //If n*10 set to white
     if(led%10 == 0)
-       leds[o(led)]=CRGB::White;
+      color = CRGB::White;
+       
+    leds[o(led)]= color / (led==temp ? 1 : 2); //division because of strange * operator behaviour
    
     FastLED.show();
     delay(10);
