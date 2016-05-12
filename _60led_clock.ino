@@ -1,25 +1,22 @@
-#include <Wire.h>    // I2C-Bibliothek einbinden
-#include "RTClib.h"  // RTC-Bibliothek einbinden
-
-RTC_DS1307 RTC;      // RTC Modul
-
-#include <OneWire.h>            // OneWire-Bibliothek einbinden
-#include <DallasTemperature.h>  // DS18B20-Bibliothek einbinden
+#include <Wire.h> 
+#include "RTClib.h"  
+#include <OneWire.h>            
+#include <DallasTemperature.h>  
 #include <FastLED.h>
 
 #define NUM_LEDS 60 //obviously...
 #define DATA_PIN 6
-#define DS18B20_PIN 4   // Pin für DS18B20 definieren Arduino D4
+#define DS18B20_PIN 4   // Pin for DS18B20
 #define OFFSET 30
-bool timeUpdate=false;
 
+RTC_DS1307 RTC; 
+bool timeUpdate=false;
 int lastBrightness;
 CRGB leds[NUM_LEDS];
-CRGB tempLeds[NUM_LEDS];
+CRGB tempLeds[NUM_LEDS]; //Second buffer for animations or storage
 OneWire oneWire(DS18B20_PIN); 
 DallasTemperature sensors(&oneWire);
 
-//char buf[NUM_LEDS*3];
 
 void rotateAnim(int del,int times){
   uint8_t hue = 0;
@@ -65,7 +62,7 @@ void showTemperature(){
   for(int led = 0; led < NUM_LEDS; led++) {
     leds[led]=CRGB::Black;
   }
-  sensors.requestTemperatures();                 // Temperatursensor auslesen
+  sensors.requestTemperatures();                 // Read temperature
   float temperature = sensors.getTempCByIndex(0);  
   int temp = min(max(round(temperature),0),59);
   for(int led = 0; led <= temp; led++) {
@@ -124,7 +121,7 @@ void setup() {
   //leds.fadeToBlackBy(40);
   if (! RTC.isrunning()) {
     
-    // Aktuelles Datum und Zeit setzen, falls die Uhr noch nicht läuft
+    //Initial clock set.
     RTC.adjust(DateTime(__DATE__, __TIME__));
   }
   pinMode(2,INPUT_PULLUP);
@@ -132,7 +129,7 @@ void setup() {
   sensors.begin();  // DS18B20 starten
   FastLED.setBrightness(128);
   lastBrightness= FastLED.getBrightness();
- // Serial.begin(9600);
+  Serial.begin(9600);
 }
 
 void loop() {
@@ -147,5 +144,21 @@ void loop() {
     FastLED.show();
     delay(20);
   }
+  if(Serial.available()>0){
+    char c = Serial.read();
+    if(c=='s'){
+      //Set Time ex. "s1463068880" unix Timestamp
+      uint32_t utime = Serial.parseInt();
+      
+      DateTime newTime(utime);
+      RTC.adjust(newTime);
+     }
+     if(c=='r'){
+        DateTime now=RTC.now();
+        Serial.println(now.unixtime());
+        Serial.println(String(now.hour())+":"+String(now.minute())+":"+String(now.second())+ " "+String(now.day())+","+String(now.month())+","+String(now.year()));
+     }
+  }
+  
   delay(10);
 }
