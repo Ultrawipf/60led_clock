@@ -5,9 +5,10 @@
 #include <FastLED.h>
 
 #define NUM_LEDS 60 //obviously...
-#define DATA_PIN 6
-#define DS18B20_PIN 4   // Pin for DS18B20
+#define DATA_PIN 6 //for leds
+#define DS18B20_PIN 5   // Pin for DS18B20
 #define OFFSET 30
+#define TIMEZONE 2 //timezone offset for unix times
 
 RTC_DS1307 RTC; 
 bool timeUpdate=false;
@@ -100,14 +101,14 @@ void showTemperature(){
 
 void updateTime(){
   DateTime now=RTC.now();
+  int sec = now.second();
   showTime(now, leds);
-  if(now.second()==59 && FastLED.getBrightness()>8)
+  if(sec==59 && now.hour()==13 && now.minute()==36){
+    rotateAnim(10,20);
+  }else if(sec==59 && FastLED.getBrightness()>8)
     showTemperature();
 
-  //1337 special
-  if(now.second()==0 && now.hour()==13 && now.minute()==37){
-    rotateAnim(10,20);
-  }
+  
 }
 
 void rtc_isr(){
@@ -140,8 +141,9 @@ void loop() {
     updateTime();
     timeUpdate=false;
   }
-  if(abs(analogRead(0)-lastBrightness*4)>5){
-    int brightness=map(analogRead(0),0,1023,0,255);
+  int brightness=map(min(max(analogRead(0),25),900),25,900,0,255); //Brightness range
+  if(abs(brightness-lastBrightness)>4){
+    
     lastBrightness=brightness;
     FastLED.setBrightness(brightness);
     FastLED.show();
@@ -154,12 +156,13 @@ void loop() {
       uint32_t utime = Serial.parseInt();
       
       DateTime newTime(utime);
-      RTC.adjust(newTime);
+      DateTime newTimeTZ = newTime + TimeSpan(0,TIMEZONE,0,0); //Timezone +2h
+      RTC.adjust(newTimeTZ);
      }
      if(c=='r'){
         DateTime now=RTC.now();
-        Serial.println(now.unixtime());
-        Serial.println(String(now.hour())+":"+String(now.minute())+":"+String(now.second())+ " "+String(now.day())+","+String(now.month())+","+String(now.year()));
+        Serial.println((now -  TimeSpan(0,TIMEZONE,0,0)).unixtime());
+        Serial.println(String(now.hour())+":"+String(now.minute())+":"+String(now.second())+ " "+String(now.day())+" "+String(now.month())+" "+String(now.year()));
      }
   }
   
