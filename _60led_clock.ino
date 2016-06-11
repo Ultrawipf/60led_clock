@@ -142,7 +142,7 @@ void loop() {
     timeUpdate=false;
   }
   int brightness=map(min(max(analogRead(0),25),900),25,900,0,255); //Brightness range
-  if(abs(brightness-lastBrightness)>4){
+  if(abs(brightness-lastBrightness)>3){
     
     lastBrightness=brightness;
     FastLED.setBrightness(brightness);
